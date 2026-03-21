@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교보문고 실시간 베스트셀러</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: #f8f8f8; color: #222; }
+
+    .header { background: #fff; border-bottom: 2px solid #e60012; padding: 24px 0 0; }
+    .header-inner { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+    .logo { font-size: 13px; color: #e60012; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px; }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 16px; }
+    .tabs { display: flex; gap: 0; border-top: 1px solid #eee; }
+    .tab { padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; color: #888; }
+    .tab.active { color: #e60012; border-bottom-color: #e60012; }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+
+    .chart-header { background: #fff; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .chart-header .time-label { font-size: 13px; color: #888; }
+    .chart-header .time-value { font-size: 15px; font-weight: 700; color: #222; }
+
+    .book-item { background: #fff; border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: box-shadow 0.15s; }
+    .book-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+    .rank-col { min-width: 36px; text-align: center; }
+    .rank-num { font-size: 22px; font-weight: 800; color: #222; line-height: 1; }
+    .rank-num.top3 { color: #e60012; }
+
+    .change-badge { font-size: 11px; font-weight: 700; margin-top: 3px; }
+    .change-badge.up { color: #e60012; }
+    .change-badge.down { color: #4a90e2; }
+    .change-badge.new { color: #ff7f00; }
+    .change-badge.same { color: #aaa; }
+
+    .divider { width: 1px; height: 40px; background: #eee; flex-shrink: 0; }
+
+    .book-info { flex: 1; min-width: 0; }
+    .book-title { font-size: 15px; font-weight: 700; color: #222; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .book-meta { font-size: 13px; color: #888; }
+
+    .book-link a { font-size: 12px; color: #e60012; text-decoration: none; border: 1px solid #e60012; border-radius: 4px; padding: 4px 8px; white-space: nowrap; font-weight: 600; }
+    .book-link a:hover { background: #e60012; color: #fff; }
+
+    .loading { text-align: center; padding: 60px; color: #aaa; font-size: 15px; }
+    .error { text-align: center; padding: 60px; color: #e60012; font-size: 15px; }
+
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item { background: #fff; border-radius: 10px; padding: 14px 20px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
+    .history-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .history-time { font-weight: 700; font-size: 15px; }
+    .history-top { font-size: 13px; color: #888; }
+    .history-arrow { color: #ccc; font-size: 18px; }
+
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: #888; font-size: 14px; cursor: pointer; margin-bottom: 16px; padding: 0; font-family: inherit; }
+    .back-btn:hover { color: #222; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">KYOBO BOOK</div>
+    <h1>실시간 베스트셀러</h1>
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('latest')">최신 차트</div>
+      <div class="tab" onclick="showTab('history')">지난 차트</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="latest-view">
+    <div class="loading">불러오는 중...</div>
+  </div>
+  <div id="history-view" style="display:none">
+    <div class="loading">불러오는 중...</div>
+  </div>
+</div>
+
+<script>
+const RAW_BASE = "https://raw.githubusercontent.com/jangmee/kyobo-bestseller/main/";
+let historyData = [];
+let currentTab = 'latest';
+
+function showTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'latest') || (i === 1 && tab === 'history'));
+  });
+  document.getElementById('latest-view').style.display = tab === 'latest' ? '' : 'none';
+  document.getElementById('history-view').style.display = tab === 'history' ? '' : 'none';
+}
+
+function changeIcon(change) {
+  if (!change || change === '-') return { icon: '–', cls: 'same' };
+  if (change === 'NEW') return { icon: 'NEW', cls: 'new' };
+  if (change.startsWith('↑')) return { icon: change, cls: 'up' };
+  if (change.startsWith('↓')) return { icon: change, cls: 'down' };
+  return { icon: change, cls: 'same' };
+}
+
+function renderBooks(books, container) {
+  if (!books || books.length === 0) {
+    container.innerHTML = '<div class="error">데이터가 없어요.</div>';
+    return;
+  }
+
+  const time = books[0]['수집시각'] || '';
+  const formatted = time.replace('-', '.').replace('-', '.').replace(' ', ' ') + ' 기준';
+
+  let html = `<div class="chart-header">
+    <span class="time-label">📅</span>
+    <span class="time-value">${formatted}</span>
+  </div>`;
+
+  books.forEach(book => {
+    const rank = parseInt(book['순위']) || 0;
+    const rankCls = rank <= 3 ? 'top3' : '';
+    const change = book['순위변동'] || '';
+    const { icon, cls } = changeIcon(change);
+    const link = book['링크'] || '';
+
+    html += `<div class="book-item">
+      <div class="rank-col">
+        <div class="rank-num ${rankCls}">${rank}</div>
+        <div class="change-badge ${cls}">${icon}</div>
+      </div>
+      <div class="divider"></div>
+      <div class="book-info">
+        <div class="book-title">${book['제목'] || ''}</div>
+        <div class="book-meta">${book['저자'] || ''} · ${book['출판사'] || ''}</div>
+      </div>
+      ${link ? `<div class="book-link"><a href="${link}" target="_blank">상세 페이지 이동</a></div>` : ''}
+    </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function renderHistoryList(history, container) {
+  if (!history || history.length === 0) {
+    container.innerHTML = '<div class="error">지난 차트 데이터가 없어요. 수집이 2회 이상 되면 쌓여요.</div>';
+    return;
+  }
+
+  let html = '<div class="history-list">';
+  [...history].reverse().forEach((entry, i) => {
+    const top1 = entry['데이터']?.[0]?.['제목'] || '';
+    html += `<div class="history-item" onclick="showHistoryDetail(${history.length - 1 - i})">
+      <div>
+        <div class="history-time">${entry['수집시각']}</div>
+        <div class="history-top">1위: ${top1}</div>
+      </div>
+      <div class="history-arrow">›</div>
+    </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function showHistoryDetail(index) {
+  const entry = historyData[index];
+  if (!entry) return;
+  const container = document.getElementById('history-view');
+  container.innerHTML = `<button class="back-btn" onclick="backToHistoryList()">← 목록으로</button>`;
+  const inner = document.createElement('div');
+  container.appendChild(inner);
+  renderBooks(entry['데이터'], inner);
+}
+
+function backToHistoryList() {
+  renderHistoryList(historyData, document.getElementById('history-view'));
+}
+
+async function loadLatest() {
+  const container = document.getElementById('latest-view');
+  try {
+    const res = await fetch(RAW_BASE + 'kyobo_bestseller.csv?t=' + Date.now());
+    const text = await res.text();
+    const books = parseCSV(text);
+    renderBooks(books, container);
+  } catch(e) {
+    container.innerHTML = '<div class="error">데이터를 불러오지 못했어요.</div>';
+  }
+}
+
+async function loadHistory() {
+  const container = document.getElementById('history-view');
+  try {
+    const res = await fetch(RAW_BASE + 'history.json?t=' + Date.now());
+    historyData = await res.json();
+    renderHistoryList(historyData, container);
+  } catch(e) {
+    container.innerHTML = '<div class="error">지난 차트 데이터가 없어요. 수집이 2회 이상 되면 쌓여요.</div>';
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].replace(/^\uFEFF/, '').split(',');
+  return lines.slice(1).map(line => {
+    const values = [];
+    let cur = '', inQ = false;
+    for (let c of line) {
+      if (c === '"') inQ = !inQ;
+      else if (c === ',' && !inQ) { values.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    values.push(cur.trim());
+    const obj = {};
+    headers.forEach((h, i) => obj[h.trim()] = values[i] || '');
+    return obj;
+  });
+}
+
+loadLatest();
+loadHistory();
+</script>
+</body>
+</html>

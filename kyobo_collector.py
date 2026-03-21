@@ -3,6 +3,7 @@
 """
 
 import csv
+import json
 import time
 import argparse
 from datetime import datetime, timezone, timedelta
@@ -22,6 +23,7 @@ except ImportError:
 
 KST = timezone(timedelta(hours=9))
 DATA_FILE = "kyobo_bestseller.csv"
+HISTORY_FILE = "history.json"
 FIELDNAMES = ["수집시각", "순위", "제목", "저자", "출판사", "링크", "이전순위", "순위변동"]
 
 
@@ -51,13 +53,11 @@ def scrape_realtime_best() -> list:
     for ol in ols:
         items = ol.find_all('li', recursive=False)
         for item in items:
-            # 제목 + 링크
+            # 제목 + 상세페이지 링크
             title_a = item.find('a', class_=lambda c: c and 'prod_link' in c and 'line-clamp-2' in c)
             if not title_a:
                 continue
             link = title_a.get('href', '')
-            if link and not link.startswith('http'):
-                link = 'https://store.kyobobook.co.kr' + link
             for span in title_a.find_all('span'):
                 span.decompose()
             title = title_a.get_text(strip=True)
@@ -125,14 +125,36 @@ def calc_change(current, previous):
 
 
 def save_to_csv(books):
+    """CSV에는 최신 1회분만 저장 (매번 덮어쓰기)"""
     path = Path(DATA_FILE)
-    is_new = not path.exists()
-    with open(path, "a", newline="", encoding="utf-8-sig") as f:
+    with open(path, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
-        if is_new:
-            writer.writeheader()
+        writer.writeheader()
         writer.writerows(books)
-    print(f"💾 {DATA_FILE} 에 저장 완료 ({len(books)}권)")
+    print(f"💾 {DATA_FILE} 저장 완료 ({len(books)}권)")
+
+
+def save_to_history(books):
+    """history.json에 모든 회차 누적 저장"""
+    path = Path(HISTORY_FILE)
+    if path.exists():
+        with open(path, encoding="utf-8") as f:
+            history = json.load(f)
+    else:
+        history = []
+
+    now = books[0]["수집시각"] if books else ""
+    history.append({
+        "수집시각": now,
+        "데이터": books
+    })
+
+    # 최근 30회분만 유지
+    history = history[-30:]
+
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+    print(f"📚 {HISTORY_FILE} 누적 저장 완료 (총 {len(history)}회)")
 
 
 def collect_once():
@@ -149,6 +171,7 @@ def collect_once():
         book["순위변동"] = calc_change(book["순위"], prev)
 
     save_to_csv(books)
+    save_to_history(books)
 
     print(f"\n{'순위':>4}  {'변동':>5}  {'제목':<40}  {'저자'}")
     print("-" * 75)
