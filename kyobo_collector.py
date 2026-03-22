@@ -53,7 +53,6 @@ def scrape_realtime_best() -> list:
     for ol in ols:
         items = ol.find_all('li', recursive=False)
         for item in items:
-            # 제목 + 상세페이지 링크
             title_a = item.find('a', class_=lambda c: c and 'prod_link' in c and 'line-clamp-2' in c)
             if not title_a:
                 continue
@@ -62,12 +61,10 @@ def scrape_realtime_best() -> list:
                 span.decompose()
             title = title_a.get_text(strip=True)
 
-            # 순위
             rank_div = item.find('div', class_=lambda c: c and 'block' in c and any('min-w' in x for x in c))
             rank_raw = rank_div.get_text(strip=True) if rank_div else str(len(books) + 1)
             rank = ''.join(filter(str.isdigit, rank_raw)) or str(len(books) + 1)
 
-            # 저자/출판사
             info_div = item.find('div', class_=lambda c: c and 'line-clamp-2' in c and 'break-all' in c)
             author = publisher = ""
             if info_div:
@@ -93,20 +90,16 @@ def scrape_realtime_best() -> list:
 
 
 def load_last_snapshot():
-    path = Path(DATA_FILE)
+    """history.json의 마지막 회차에서 순위 기준 가져오기"""
+    path = Path(HISTORY_FILE)
     if not path.exists():
         return {}
-    last_time = None
-    last_snapshot = {}
-    with open(path, encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            t = row.get("수집시각", "")
-            if t != last_time:
-                last_time = t
-                last_snapshot = {}
-            last_snapshot[row["제목"]] = row["순위"]
-    return last_snapshot
+    with open(path, encoding="utf-8") as f:
+        history = json.load(f)
+    if not history:
+        return {}
+    last = history[-1].get("데이터", [])
+    return {row["제목"]: row["순위"] for row in last}
 
 
 def calc_change(current, previous):
@@ -125,7 +118,7 @@ def calc_change(current, previous):
 
 
 def save_to_csv(books):
-    """CSV에는 최신 1회분만 저장 (매번 덮어쓰기)"""
+    """CSV는 최신 1회분만 (덮어쓰기)"""
     path = Path(DATA_FILE)
     with open(path, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
@@ -135,7 +128,7 @@ def save_to_csv(books):
 
 
 def save_to_history(books):
-    """history.json에 모든 회차 누적 저장"""
+    """history.json에 누적 저장 (자동 수집만)"""
     path = Path(HISTORY_FILE)
     if path.exists():
         with open(path, encoding="utf-8") as f:
@@ -157,7 +150,7 @@ def save_to_history(books):
     print(f"📚 {HISTORY_FILE} 누적 저장 완료 (총 {len(history)}회)")
 
 
-def collect_once():
+def collect_once(is_scheduled: bool = True):
     last = load_last_snapshot()
     books = scrape_realtime_best()
 
@@ -171,7 +164,12 @@ def collect_once():
         book["순위변동"] = calc_change(book["순위"], prev)
 
     save_to_csv(books)
-    save_to_history(books)
+
+    if is_scheduled:
+        save_to_history(books)
+        print("📅 자동 수집 — history.json에 저장했어요")
+    else:
+        print("🖐 수동 수집 — history.json에는 저장하지 않았어요")
 
     print(f"\n{'순위':>4}  {'변동':>5}  {'제목':<40}  {'저자'}")
     print("-" * 75)
@@ -182,16 +180,20 @@ def collect_once():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--loop", type=int, default=0)
+    parser.add_argument("--event", type=str, default="schedule",
+                        help="GitHub event name (schedule / workflow_dispatch)")
     args = parser.parse_args()
+
+    is_scheduled = (args.event == "schedule")
 
     if args.loop > 0:
         print(f"🔄 {args.loop}분마다 자동 수집 시작 (종료: Ctrl+C)")
         while True:
             print(f"\n⏰ {datetime.now(KST).strftime('%Y-%m-%d %H:%M')} 수집 시작")
-            collect_once()
+            collect_once(is_scheduled=True)
             time.sleep(args.loop * 60)
     else:
-        collect_once()
+        collect_once(is_scheduled=is_scheduled)
 
 
 if __name__ == "__main__":
