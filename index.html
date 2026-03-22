@@ -109,7 +109,11 @@ function renderBooks(books, container) {
   }
 
   const time = books[0]['수집시각'] || '';
-  const formatted = time.replace('-', '.').replace('-', '.').replace(' ', ' ') + ' 기준';
+  // 분을 00으로 정각으로 표시 (예: 15:05 수집 → 15:00 기준으로 표시)
+  const parts = time.split(' ');
+  const datePart = parts[0].replace(/-/g, '.');
+  const hourPart = parts[1] ? parts[1].split(':')[0] + ':00' : '00:00';
+  const formatted = datePart + ' ' + hourPart + ' 기준';
 
   let html = `<div class="chart-header">
     <span class="time-label">📅</span>
