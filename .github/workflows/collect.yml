@@ -24,12 +24,12 @@ jobs:
           playwright install-deps chromium
 
       - name: 수집 실행
-        run: python kyobo_collector.py
+        run: python kyobo_collector.py --event ${{ github.event_name }}
 
       - name: 결과 저장
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add kyobo_bestseller.csv history.json
+          git add kyobo_bestseller.csv aladin_bestseller.csv yes24_bestseller.csv history.json
           git diff --staged --quiet || git commit -m "자동 수집: $(TZ='Asia/Seoul' date '+%Y-%m-%d %H:%M') KST"
           git push
