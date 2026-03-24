@@ -3,58 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>교보문고 실시간 베스트셀러</title>
+  <title>실시간 베스트셀러</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: #f8f8f8; color: #222; }
 
-    .header { background: #fff; border-bottom: 2px solid #e60012; padding: 24px 0 0; }
+    .header { background: #fff; border-bottom: 2px solid #e60012; padding: 20px 0 0; }
     .header-inner { max-width: 900px; margin: 0 auto; padding: 0 20px; }
-    .logo { font-size: 13px; color: #e60012; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px; }
-    h1 { font-size: 26px; font-weight: 800; margin-bottom: 16px; }
-    .tabs { display: flex; gap: 0; border-top: 1px solid #eee; }
-    .tab { padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; color: #888; }
+    .logo { font-size: 12px; color: #e60012; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px; }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 12px; }
+
+    .tabs-row { display: flex; justify-content: space-between; align-items: flex-end; }
+    .tabs { display: flex; }
+    .tab { padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; color: #888; white-space: nowrap; }
     .tab.active { color: #e60012; border-bottom-color: #e60012; }
 
-    .container { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+    .store-tabs { display: flex; gap: 6px; padding-bottom: 10px; }
+    .store-tab { padding: 5px 12px; font-size: 13px; font-weight: 600; border-radius: 20px; cursor: pointer; border: 1px solid #ddd; color: #666; background: #fff; }
+    .store-tab.active { background: #e60012; color: #fff; border-color: #e60012; }
 
-    .chart-header { background: #fff; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-    .chart-header .time-label { font-size: 13px; color: #888; }
-    .chart-header .time-value { font-size: 15px; font-weight: 700; color: #222; }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
 
-    .book-item { background: #fff; border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: box-shadow 0.15s; }
+    .chart-header { background: #fff; border-radius: 12px; padding: 14px 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .chart-header .time-value { font-size: 14px; font-weight: 700; }
+
+    .book-item { background: #fff; border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: box-shadow 0.15s; }
     .book-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
-    .rank-col { min-width: 36px; text-align: center; }
-    .rank-num { font-size: 22px; font-weight: 800; color: #222; line-height: 1; }
+    .rank-col { min-width: 34px; text-align: center; flex-shrink: 0; }
+    .rank-num { font-size: 20px; font-weight: 800; line-height: 1; }
     .rank-num.top3 { color: #e60012; }
-
-    .change-badge { font-size: 11px; font-weight: 700; margin-top: 3px; }
+    .change-badge { font-size: 11px; font-weight: 700; margin-top: 2px; }
     .change-badge.up { color: #e60012; }
     .change-badge.down { color: #4a90e2; }
     .change-badge.new { color: #ff7f00; }
-    .change-badge.same { color: #aaa; }
+    .change-badge.same { color: #bbb; }
 
-    .divider { width: 1px; height: 40px; background: #eee; flex-shrink: 0; }
-
+    .divider { width: 1px; height: 36px; background: #eee; flex-shrink: 0; }
     .book-info { flex: 1; min-width: 0; }
-    .book-title { font-size: 15px; font-weight: 700; color: #222; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .book-meta { font-size: 13px; color: #888; }
-
-    .book-link a { font-size: 12px; color: #e60012; text-decoration: none; border: 1px solid #e60012; border-radius: 4px; padding: 4px 8px; white-space: nowrap; font-weight: 600; }
+    .book-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .book-meta { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .book-link a { font-size: 11px; color: #e60012; text-decoration: none; border: 1px solid #e60012; border-radius: 4px; padding: 3px 7px; white-space: nowrap; font-weight: 600; }
     .book-link a:hover { background: #e60012; color: #fff; }
 
-    .loading { text-align: center; padding: 60px; color: #aaa; font-size: 15px; }
-    .error { text-align: center; padding: 60px; color: #e60012; font-size: 15px; }
+    .loading { text-align: center; padding: 60px; color: #aaa; }
+    .error { text-align: center; padding: 40px; color: #e60012; font-size: 14px; }
 
     .history-list { display: flex; flex-direction: column; gap: 8px; }
-    .history-item { background: #fff; border-radius: 10px; padding: 14px 20px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
+    .history-item { background: #fff; border-radius: 10px; padding: 14px 18px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
     .history-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .history-time { font-weight: 700; font-size: 15px; }
-    .history-top { font-size: 13px; color: #888; }
-    .history-arrow { color: #ccc; font-size: 18px; }
-
-    .back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: #888; font-size: 14px; cursor: pointer; margin-bottom: 16px; padding: 0; font-family: inherit; }
+    .history-time { font-weight: 700; font-size: 14px; }
+    .history-top { font-size: 12px; color: #999; margin-top: 2px; }
+    .back-btn { background: none; border: none; color: #888; font-size: 14px; cursor: pointer; margin-bottom: 14px; padding: 0; font-family: inherit; display: flex; align-items: center; gap: 4px; }
     .back-btn:hover { color: #222; }
   </style>
 </head>
@@ -62,36 +62,53 @@
 
 <div class="header">
   <div class="header-inner">
-    <div class="logo">KYOBO BOOK</div>
+    <div class="logo">REALTIME BESTSELLER</div>
     <h1>실시간 베스트셀러</h1>
-    <div class="tabs">
-      <div class="tab active" onclick="showTab('latest')">최신 차트</div>
-      <div class="tab" onclick="showTab('history')">지난 차트</div>
+    <div class="tabs-row">
+      <div class="tabs">
+        <div class="tab active" onclick="showMainTab('latest')">최신 차트</div>
+        <div class="tab" onclick="showMainTab('history')">지난 차트</div>
+      </div>
+      <div class="store-tabs">
+        <div class="store-tab active" onclick="setStore('kyobo')">교보문고</div>
+        <div class="store-tab" onclick="setStore('aladin')">알라딘</div>
+        <div class="store-tab" onclick="setStore('yes24')">예스24</div>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="container">
-  <div id="latest-view">
-    <div class="loading">불러오는 중...</div>
-  </div>
-  <div id="history-view" style="display:none">
-    <div class="loading">불러오는 중...</div>
-  </div>
+  <div id="latest-view"><div class="loading">불러오는 중...</div></div>
+  <div id="history-view" style="display:none"><div class="loading">불러오는 중...</div></div>
 </div>
 
 <script>
-const RAW_BASE = "https://raw.githubusercontent.com/jangmee/kyobo-bestseller/main/";
-let historyData = [];
-let currentTab = 'latest';
+const RAW = "https://raw.githubusercontent.com/jangmee/kyobo-bestseller/main/";
+const STORE_NAMES = { kyobo: "교보문고", aladin: "알라딘", yes24: "예스24" };
+const CSV_FILES = { kyobo: "kyobo_bestseller.csv", aladin: "aladin_bestseller.csv", yes24: "yes24_bestseller.csv" };
 
-function showTab(tab) {
-  currentTab = tab;
+let currentMainTab = 'latest';
+let currentStore = 'kyobo';
+let historyData = [];
+
+function showMainTab(tab) {
+  currentMainTab = tab;
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', (i === 0 && tab === 'latest') || (i === 1 && tab === 'history'));
   });
   document.getElementById('latest-view').style.display = tab === 'latest' ? '' : 'none';
   document.getElementById('history-view').style.display = tab === 'history' ? '' : 'none';
+}
+
+function setStore(store) {
+  currentStore = store;
+  document.querySelectorAll('.store-tab').forEach((t, i) => {
+    const stores = ['kyobo', 'aladin', 'yes24'];
+    t.classList.toggle('active', stores[i] === store);
+  });
+  if (currentMainTab === 'latest') loadLatest();
+  else renderHistoryList(historyData);
 }
 
 function changeIcon(change) {
@@ -102,63 +119,60 @@ function changeIcon(change) {
   return { icon: change, cls: 'same' };
 }
 
+function toOnTheHour(timeStr) {
+  // "2026-03-22 15:05" → "2026.03.22 15:00 기준"
+  // 예스24는 이미 "2026.03.24 18:00" 형식
+  const clean = timeStr.replace(/-/g, '.');
+  const parts = clean.split(' ');
+  if (parts.length < 2) return clean + ' 기준';
+  const hour = parts[1].split(':')[0];
+  return parts[0] + ' ' + hour + ':00 기준';
+}
+
 function renderBooks(books, container) {
   if (!books || books.length === 0) {
     container.innerHTML = '<div class="error">데이터가 없어요.</div>';
     return;
   }
-
   const time = books[0]['수집시각'] || '';
-  // 분을 00으로 정각으로 표시 (예: 15:05 수집 → 15:00 기준으로 표시)
-  const parts = time.split(' ');
-  const datePart = parts[0].replace(/-/g, '.');
-  const hourPart = parts[1] ? parts[1].split(':')[0] + ':00' : '00:00';
-  const formatted = datePart + ' ' + hourPart + ' 기준';
-
-  let html = `<div class="chart-header">
-    <span class="time-label">📅</span>
-    <span class="time-value">${formatted}</span>
-  </div>`;
-
+  let html = `<div class="chart-header"><span>📅</span><span class="time-value">${toOnTheHour(time)}</span></div>`;
   books.forEach(book => {
     const rank = parseInt(book['순위']) || 0;
-    const rankCls = rank <= 3 ? 'top3' : '';
-    const change = book['순위변동'] || '';
-    const { icon, cls } = changeIcon(change);
+    const { icon, cls } = changeIcon(book['순위변동'] || '');
     const link = book['링크'] || '';
-
     html += `<div class="book-item">
       <div class="rank-col">
-        <div class="rank-num ${rankCls}">${rank}</div>
+        <div class="rank-num ${rank<=3?'top3':''}">${rank}</div>
         <div class="change-badge ${cls}">${icon}</div>
       </div>
       <div class="divider"></div>
       <div class="book-info">
-        <div class="book-title">${book['제목'] || ''}</div>
-        <div class="book-meta">${book['저자'] || ''} · ${book['출판사'] || ''}</div>
+        <div class="book-title">${book['제목']||''}</div>
+        <div class="book-meta">${book['저자']||''} · ${book['출판사']||''}</div>
       </div>
-      ${link ? `<div class="book-link"><a href="${link}" target="_blank">상세 페이지 이동</a></div>` : ''}
+      ${link ? `<div class="book-link"><a href="${link}" target="_blank">상세 페이지</a></div>` : ''}
     </div>`;
   });
-
   container.innerHTML = html;
 }
 
-function renderHistoryList(history, container) {
+function renderHistoryList(history) {
+  const container = document.getElementById('history-view');
   if (!history || history.length === 0) {
-    container.innerHTML = '<div class="error">지난 차트 데이터가 없어요. 수집이 2회 이상 되면 쌓여요.</div>';
+    container.innerHTML = '<div class="error">지난 차트가 아직 없어요.</div>';
     return;
   }
-
   let html = '<div class="history-list">';
   [...history].reverse().forEach((entry, i) => {
-    const top1 = entry['데이터']?.[0]?.['제목'] || '';
-    html += `<div class="history-item" onclick="showHistoryDetail(${history.length - 1 - i})">
+    const data = entry['데이터']?.[currentStore] || [];
+    const top1 = data[0]?.['제목'] || '데이터 없음';
+    const time = toOnTheHour(entry['수집시각'] || '');
+    html += `<div class="history-item" onclick="showHistoryDetail(${history.length-1-i})">
       <div>
-        <div class="history-time">${entry['수집시각']}</div>
+        <div class="history-time">${time}</div>
         <div class="history-top">1위: ${top1}</div>
       </div>
-      <div class="history-arrow">›</div>
+      <span style="color:#ccc;font-size:18px">›</span>
     </div>`;
   });
   html += '</div>';
@@ -168,38 +182,17 @@ function renderHistoryList(history, container) {
 function showHistoryDetail(index) {
   const entry = historyData[index];
   if (!entry) return;
+  const books = entry['데이터']?.[currentStore] || [];
   const container = document.getElementById('history-view');
-  container.innerHTML = `<button class="back-btn" onclick="backToHistoryList()">← 목록으로</button>`;
+  container.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'back-btn';
+  btn.innerHTML = '← 목록으로';
+  btn.onclick = () => renderHistoryList(historyData);
+  container.appendChild(btn);
   const inner = document.createElement('div');
   container.appendChild(inner);
-  renderBooks(entry['데이터'], inner);
-}
-
-function backToHistoryList() {
-  renderHistoryList(historyData, document.getElementById('history-view'));
-}
-
-async function loadLatest() {
-  const container = document.getElementById('latest-view');
-  try {
-    const res = await fetch(RAW_BASE + 'kyobo_bestseller.csv?t=' + Date.now());
-    const text = await res.text();
-    const books = parseCSV(text);
-    renderBooks(books, container);
-  } catch(e) {
-    container.innerHTML = '<div class="error">데이터를 불러오지 못했어요.</div>';
-  }
-}
-
-async function loadHistory() {
-  const container = document.getElementById('history-view');
-  try {
-    const res = await fetch(RAW_BASE + 'history.json?t=' + Date.now());
-    historyData = await res.json();
-    renderHistoryList(historyData, container);
-  } catch(e) {
-    container.innerHTML = '<div class="error">지난 차트 데이터가 없어요. 수집이 2회 이상 되면 쌓여요.</div>';
-  }
+  renderBooks(books, inner);
 }
 
 function parseCSV(text) {
@@ -216,9 +209,31 @@ function parseCSV(text) {
     }
     values.push(cur.trim());
     const obj = {};
-    headers.forEach((h, i) => obj[h.trim()] = values[i] || '');
+    headers.forEach((h, i) => obj[h.trim()] = (values[i]||'').replace(/\r/g,''));
     return obj;
   });
+}
+
+async function loadLatest() {
+  const container = document.getElementById('latest-view');
+  container.innerHTML = '<div class="loading">불러오는 중...</div>';
+  try {
+    const res = await fetch(RAW + CSV_FILES[currentStore] + '?t=' + Date.now());
+    const text = await res.text();
+    renderBooks(parseCSV(text), container);
+  } catch(e) {
+    container.innerHTML = '<div class="error">데이터를 불러오지 못했어요.</div>';
+  }
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch(RAW + 'history.json?t=' + Date.now());
+    historyData = await res.json();
+    renderHistoryList(historyData);
+  } catch(e) {
+    document.getElementById('history-view').innerHTML = '<div class="error">지난 차트가 아직 없어요.</div>';
+  }
 }
 
 loadLatest();
