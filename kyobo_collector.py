@@ -28,10 +28,6 @@ STORES = ["kyobo", "aladin", "yes24"]
 FIELDNAMES = ["수집시각", "순위", "제목", "저자", "출판사", "링크", "이전순위", "순위변동"]
 
 
-# ───────────────────────────────────────────
-# 스크래핑
-# ───────────────────────────────────────────
-
 def fetch_html(url: str) -> str:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -188,11 +184,8 @@ def scrape_all(now: str) -> dict:
     return results
 
 
-# ───────────────────────────────────────────
-# 저장
-# ───────────────────────────────────────────
-
 def load_last_snapshot(store: str) -> dict:
+    """history.json의 마지막 회차에서 해당 서점 순위 기준 가져오기"""
     path = Path(HISTORY_FILE)
     if not path.exists():
         return {}
@@ -200,8 +193,14 @@ def load_last_snapshot(store: str) -> dict:
         history = json.load(f)
     if not history:
         return {}
-    last = history[-1].get("데이터", {}).get(store, [])
-    return {row["제목"]: row["순위"] for row in last}
+    # 마지막 항목의 데이터 구조 확인 후 안전하게 접근
+    last_entry = history[-1]
+    data = last_entry.get("데이터", {})
+    # 구버전 호환: 데이터가 dict가 아닌 경우 빈 dict 반환
+    if not isinstance(data, dict):
+        return {}
+    store_data = data.get(store, [])
+    return {row["제목"]: row["순위"] for row in store_data if isinstance(row, dict)}
 
 
 def calc_change(current, previous):
@@ -233,7 +232,12 @@ def save_history(all_books: dict, now: str):
     history = []
     if path.exists():
         with open(path, encoding="utf-8") as f:
-            history = json.load(f)
+            try:
+                history = json.load(f)
+                # 구버전 데이터 필터링
+                history = [h for h in history if isinstance(h.get("데이터", {}), dict)]
+            except:
+                history = []
 
     history.append({"수집시각": now, "데이터": all_books})
     history = history[-30:]
@@ -243,17 +247,12 @@ def save_history(all_books: dict, now: str):
     print(f"  📚 history.json 저장 (총 {len(history)}회)")
 
 
-# ───────────────────────────────────────────
-# 메인
-# ───────────────────────────────────────────
-
 def collect_once(is_scheduled: bool = True):
     now = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     print(f"\n⏰ {now} 수집 시작\n")
 
     all_books = scrape_all(now)
 
-    # 순위 변동 계산 및 CSV 저장
     for store in STORES:
         books = all_books.get(store, [])
         if not books:
