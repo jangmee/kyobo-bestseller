@@ -200,9 +200,9 @@ def calc_change(current, previous):
     try:
         diff = int(previous) - int(current)
         if diff > 0:
-            return f"up{diff}"
+            return f"↑{diff}"
         elif diff < 0:
-            return f"down{abs(diff)}"
+            return f"↓{abs(diff)}"
         else:
             return "-"
     except ValueError:
