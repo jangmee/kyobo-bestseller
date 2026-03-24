@@ -23,13 +23,8 @@ jobs:
           playwright install chromium
           playwright install-deps chromium
 
-      - name: 수집 실행 (자동)
-        if: github.event_name == 'schedule'
-        run: python kyobo_collector.py --event schedule
-
-      - name: 수집 실행 (수동)
-        if: github.event_name == 'workflow_dispatch'
-        run: python kyobo_collector.py --event workflow_dispatch
+      - name: 수집 실행
+        run: python kyobo_collector.py --event ${{ github.event_name }}
 
       - name: 결과 저장
         run: |
