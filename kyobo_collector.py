@@ -1,12 +1,4 @@
-"""
-교보문고 / 알라딘 / 예스24 실시간 베스트셀러 수집기
-"""
-
-import csv
-import json
-import time
-import argparse
-import re
+import csv, json, time, argparse, re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -43,7 +35,7 @@ def fetch_html(url):
     return html
 
 
-def parse_kyobo(html, now):
+def parse_kyobo(html, now, offset=0):
     soup = BeautifulSoup(html, "html.parser")
     ols = [ol for ol in soup.find_all("ol") if "grid" in (ol.get("class") or [])]
     books = []
@@ -57,25 +49,33 @@ def parse_kyobo(html, now):
                 span.decompose()
             title = title_a.get_text(strip=True)
             rank_div = item.find("div", class_=lambda c: c and "block" in c and any("min-w" in x for x in c))
-            rank_raw = rank_div.get_text(strip=True) if rank_div else str(len(books)+1)
-            rank = "".join(filter(str.isdigit, rank_raw)) or str(len(books)+1)
+            rank_raw = rank_div.get_text(strip=True) if rank_div else str(offset + len(books) + 1)
+            rank = "".join(filter(str.isdigit, rank_raw)) or str(offset + len(books) + 1)
             info_div = item.find("div", class_=lambda c: c and "line-clamp-2" in c and "break-all" in c)
             author = publisher = ""
             if info_div:
                 date_span = info_div.find("span", class_="date")
                 date_str = date_span.get_text(strip=True) if date_span else ""
-                text = info_div.get_text(strip=True).replace(date_str, "").strip().rstrip(".")
-                parts = [p.strip() for p in text.split(".") if p.strip()]
+                text = info_div.get_text(strip=True).replace(date_str, "").strip().rstrip("·")
+                parts = [p.strip() for p in text.split("·") if p.strip()]
                 author = parts[0] if parts else ""
                 publisher = parts[1] if len(parts) > 1 else ""
             books.append({"수집시각": now, "순위": rank, "제목": title,
                           "저자": author, "출판사": publisher, "링크": link,
                           "이전순위": "", "순위변동": ""})
-            if len(books) >= 100:
-                break
+    return books
+
+
+def scrape_kyobo(now):
+    books = []
+    for page in [1, 2]:
+        url = f"https://store.kyobobook.co.kr/bestseller/realtime?page={page}&per=50"
+        html = fetch_html(url)
+        page_books = parse_kyobo(html, now, offset=len(books))
+        books.extend(page_books)
         if len(books) >= 100:
             break
-    return books
+    return books[:100]
 
 
 def parse_aladin_html(html, now, offset=0):
@@ -154,8 +154,7 @@ def scrape_all(now):
     results = {}
     print("교보문고 수집 중...")
     try:
-        html = fetch_html("https://store.kyobobook.co.kr/bestseller/realtime")
-        results["kyobo"] = parse_kyobo(html, now)
+        results["kyobo"] = scrape_kyobo(now)
         print(f"  교보문고 {len(results['kyobo'])}권")
     except Exception as e:
         print(f"  교보문고 실패: {e}")
