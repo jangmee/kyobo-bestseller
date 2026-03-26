@@ -35,7 +35,9 @@ def fetch_html(url):
     return html
 
 
-def fetch_html_scroll(url):
+def fetch_kyobo_100():
+    """교보문고 100위까지 - 50개씩 보기로 변경 후 2페이지 수집"""
+    pages_html = []
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(user_agent=(
@@ -43,14 +45,33 @@ def fetch_html_scroll(url):
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         ))
         page = context.new_page()
-        page.goto(url, timeout=30000)
+        page.goto("https://store.kyobobook.co.kr/bestseller/realtime", timeout=30000)
         page.wait_for_timeout(4000)
-        for _ in range(8):
-            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            page.wait_for_timeout(1500)
-        html = page.content()
+
+        # "50개씩 보기" 드롭다운 클릭
+        try:
+            # 드롭다운 버튼 찾기
+            page.click("button:has-text('20개씩 보기')", timeout=5000)
+            page.wait_for_timeout(1000)
+            # 50개 옵션 클릭
+            page.click("li:has-text('50개씩 보기')", timeout=5000)
+            page.wait_for_timeout(3000)
+        except Exception as e:
+            print(f"  드롭다운 클릭 실패: {e}")
+
+        # 1페이지 저장
+        pages_html.append(page.content())
+
+        # 2페이지로 이동
+        try:
+            page.click("button:has-text('2')", timeout=5000)
+            page.wait_for_timeout(3000)
+            pages_html.append(page.content())
+        except Exception as e:
+            print(f"  2페이지 이동 실패: {e}")
+
         browser.close()
-    return html
+    return pages_html
 
 
 def parse_kyobo(html, now):
@@ -85,8 +106,14 @@ def parse_kyobo(html, now):
 
 
 def scrape_kyobo(now):
-    html = fetch_html_scroll("https://store.kyobobook.co.kr/bestseller/realtime")
-    books = parse_kyobo(html, now)
+    pages_html = fetch_kyobo_100()
+    books = []
+    seen = set()
+    for html in pages_html:
+        for b in parse_kyobo(html, now):
+            if b["제목"] not in seen:
+                seen.add(b["제목"])
+                books.append(b)
     return books[:100]
 
 
