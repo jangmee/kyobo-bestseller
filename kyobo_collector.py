@@ -35,7 +35,25 @@ def fetch_html(url):
     return html
 
 
-def parse_kyobo(html, now, offset=0):
+def fetch_html_scroll(url):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(user_agent=(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        ))
+        page = context.new_page()
+        page.goto(url, timeout=30000)
+        page.wait_for_timeout(4000)
+        for _ in range(8):
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            page.wait_for_timeout(1500)
+        html = page.content()
+        browser.close()
+    return html
+
+
+def parse_kyobo(html, now):
     soup = BeautifulSoup(html, "html.parser")
     ols = [ol for ol in soup.find_all("ol") if "grid" in (ol.get("class") or [])]
     books = []
@@ -49,8 +67,8 @@ def parse_kyobo(html, now, offset=0):
                 span.decompose()
             title = title_a.get_text(strip=True)
             rank_div = item.find("div", class_=lambda c: c and "block" in c and any("min-w" in x for x in c))
-            rank_raw = rank_div.get_text(strip=True) if rank_div else str(offset + len(books) + 1)
-            rank = "".join(filter(str.isdigit, rank_raw)) or str(offset + len(books) + 1)
+            rank_raw = rank_div.get_text(strip=True) if rank_div else str(len(books)+1)
+            rank = "".join(filter(str.isdigit, rank_raw)) or str(len(books)+1)
             info_div = item.find("div", class_=lambda c: c and "line-clamp-2" in c and "break-all" in c)
             author = publisher = ""
             if info_div:
@@ -67,14 +85,8 @@ def parse_kyobo(html, now, offset=0):
 
 
 def scrape_kyobo(now):
-    books = []
-    for page in [1, 2]:
-        url = f"https://store.kyobobook.co.kr/bestseller/realtime?page={page}&per=50"
-        html = fetch_html(url)
-        page_books = parse_kyobo(html, now, offset=len(books))
-        books.extend(page_books)
-        if len(books) >= 100:
-            break
+    html = fetch_html_scroll("https://store.kyobobook.co.kr/bestseller/realtime")
+    books = parse_kyobo(html, now)
     return books[:100]
 
 
