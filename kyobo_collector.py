@@ -80,6 +80,8 @@ def scrape_kyobo(now):
         print(f"  교보 {page}페이지: {len(page_books)}권 (누적 {len(books)}권)")
         if len(books) >= 100:
             break
+    for i, b in enumerate(books):
+        b["순위"] = str(i+1)
     return books[:100]
 
 
@@ -119,6 +121,8 @@ def scrape_aladin(now):
         books.extend(page_books)
         if len(books) >= 100:
             break
+    for i, b in enumerate(books):
+        b["순위"] = str(i+1)
     return books[:100]
 
 
