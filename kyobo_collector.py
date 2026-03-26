@@ -50,7 +50,7 @@ def parse_kyobo(html, now):
             title = title_a.get_text(strip=True)
             rank_div = item.find("div", class_=lambda c: c and "block" in c and any("min-w" in x for x in c))
             rank_raw = rank_div.get_text(strip=True) if rank_div else str(len(books)+1)
-            rank = "".join(filter(str.isdigit, rank_raw)) or str(len(books)+1)
+            rank = str(len(books)+1)
             info_div = item.find("div", class_=lambda c: c and "line-clamp-2" in c and "break-all" in c)
             author = publisher = ""
             if info_div:
