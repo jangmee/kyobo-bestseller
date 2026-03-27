@@ -8,33 +8,41 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: #f8f8f8; color: #222; }
 
-    .header { background: #fff; border-bottom: 2px solid #e60012; padding: 20px 0 0; }
+    .header { background: #fff; border-bottom: 2px solid var(--store-color); padding: 20px 0 0; transition: border-color 0.2s; }
     .header-inner { max-width: 900px; margin: 0 auto; padding: 0 20px; }
-    .logo { font-size: 12px; color: #e60012; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px; }
+    .logo { font-size: 12px; color: var(--store-color); font-weight: 700; letter-spacing: 1px; margin-bottom: 4px; transition: color 0.2s; }
     h1 { font-size: 24px; font-weight: 800; margin-bottom: 12px; }
 
     .tabs-row { display: flex; justify-content: space-between; align-items: flex-end; }
     .tabs { display: flex; }
     .tab { padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; color: #888; white-space: nowrap; }
-    .tab.active { color: #e60012; border-bottom-color: #e60012; }
+    .tab.active { color: var(--store-color); border-bottom-color: var(--store-color); transition: color 0.2s, border-color 0.2s; }
 
     .store-tabs { display: flex; gap: 6px; padding-bottom: 10px; }
-    .store-tab { padding: 5px 12px; font-size: 13px; font-weight: 600; border-radius: 20px; cursor: pointer; border: 1px solid #ddd; color: #666; background: #fff; }
-    .store-tab.active { background: #e60012; color: #fff; border-color: #e60012; }
+    .store-tab { padding: 5px 12px; font-size: 13px; font-weight: 600; border-radius: 20px; cursor: pointer; border: 1px solid #ddd; color: #666; background: #fff; transition: all 0.15s; }
+    .store-tab.active { color: #fff; }
+    .store-tab[data-store="kyobo"].active { background: #6DB329; border-color: #6DB329; }
+    .store-tab[data-store="aladin"].active { background: #FB2888; border-color: #FB2888; }
+    .store-tab[data-store="yes24"].active { background: #0080FF; border-color: #0080FF; }
 
     .container { max-width: 900px; margin: 0 auto; padding: 20px; }
 
-    .chart-header { background: #fff; border-radius: 12px; padding: 14px 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .chart-header { background: #fff; border-radius: 12px; padding: 14px 18px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
     .chart-header .time-value { font-size: 14px; font-weight: 700; }
+
+    .filter-btn { padding: 5px 12px; font-size: 12px; font-weight: 700; border-radius: 20px; cursor: pointer; border: 1.5px solid var(--store-color); color: var(--store-color); background: #fff; transition: all 0.15s; white-space: nowrap; }
+    .filter-btn.active { background: var(--store-color); color: #fff; }
 
     .book-item { background: #fff; border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: box-shadow 0.15s; }
     .book-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .book-item.hidden { display: none; }
+    .book-item.highlight { border-left: 3px solid var(--store-color); }
 
     .rank-col { min-width: 34px; text-align: center; flex-shrink: 0; }
     .rank-num { font-size: 20px; font-weight: 800; line-height: 1; }
-    .rank-num.top3 { color: #e60012; }
+    .rank-num.top3 { color: var(--store-color); }
     .change-badge { font-size: 11px; font-weight: 700; margin-top: 2px; }
-    .change-badge.up { color: #e60012; }
+    .change-badge.up { color: var(--store-color); }
     .change-badge.down { color: #4a90e2; }
     .change-badge.new { color: #ff7f00; }
     .change-badge.same { color: #bbb; }
@@ -42,9 +50,11 @@
     .divider { width: 1px; height: 36px; background: #eee; flex-shrink: 0; }
     .book-info { flex: 1; min-width: 0; }
     .book-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .book-meta { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .book-link a { font-size: 11px; color: #e60012; text-decoration: none; border: 1px solid #e60012; border-radius: 4px; padding: 3px 7px; white-space: nowrap; font-weight: 600; }
-    .book-link a:hover { background: #e60012; color: #fff; }
+    .book-meta { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+    .our-badge { font-size: 10px; font-weight: 700; color: #fff; background: var(--store-color); border-radius: 4px; padding: 1px 5px; white-space: nowrap; flex-shrink: 0; }
+
+    .book-link a { font-size: 11px; color: var(--store-color); text-decoration: none; border: 1px solid var(--store-color); border-radius: 4px; padding: 3px 7px; white-space: nowrap; font-weight: 600; transition: all 0.15s; }
+    .book-link a:hover { background: var(--store-color); color: #fff; }
 
     .loading { text-align: center; padding: 60px; color: #aaa; }
     .error { text-align: center; padding: 40px; color: #e60012; font-size: 14px; }
@@ -60,9 +70,9 @@
 </head>
 <body>
 
-<div class="header">
+<div class="header" id="header">
   <div class="header-inner">
-    <div class="logo">REALTIME BESTSELLER</div>
+    <div class="logo" id="logo">REALTIME BESTSELLER</div>
     <h1>실시간 베스트셀러</h1>
     <div class="tabs-row">
       <div class="tabs">
@@ -70,9 +80,9 @@
         <div class="tab" onclick="showMainTab('history')">지난 차트</div>
       </div>
       <div class="store-tabs">
-        <div class="store-tab active" onclick="setStore('kyobo')">교보문고</div>
-        <div class="store-tab" onclick="setStore('aladin')">알라딘</div>
-        <div class="store-tab" onclick="setStore('yes24')">예스24</div>
+        <div class="store-tab active" data-store="kyobo" onclick="setStore('kyobo')">교보문고</div>
+        <div class="store-tab" data-store="aladin" onclick="setStore('aladin')">알라딘</div>
+        <div class="store-tab" data-store="yes24" onclick="setStore('yes24')">예스24</div>
       </div>
     </div>
   </div>
@@ -85,12 +95,27 @@
 
 <script>
 const RAW = "https://raw.githubusercontent.com/jangmee/kyobo-bestseller/main/";
-const STORE_NAMES = { kyobo: "교보문고", aladin: "알라딘", yes24: "예스24" };
 const CSV_FILES = { kyobo: "kyobo_bestseller.csv", aladin: "aladin_bestseller.csv", yes24: "yes24_bestseller.csv" };
+const STORE_COLORS = { kyobo: "#6DB329", aladin: "#FB2888", yes24: "#0080FF" };
+
+// 관심 출판사 목록
+const OUR_PUBLISHERS = [
+  "다산북스", "다산책방", "다산초당", "다산라이프", "다산사이언스",
+  "다산에듀", "놀", "오브제", "다산3.0", "다산4.0", "유영",
+  "사무사책방", "요요", "브라이트", "다산어린이", "스튜디오다산",
+  "블라썸", "몬스터", "라비앙", "다산코믹스", "다산스마트에듀",
+  "오티움", "수카"
+];
 
 let currentMainTab = 'latest';
 let currentStore = 'kyobo';
 let historyData = [];
+let filterOn = false;
+
+function setStoreColor(store) {
+  const color = STORE_COLORS[store];
+  document.documentElement.style.setProperty('--store-color', color);
+}
 
 function showMainTab(tab) {
   currentMainTab = tab;
@@ -103,12 +128,17 @@ function showMainTab(tab) {
 
 function setStore(store) {
   currentStore = store;
-  document.querySelectorAll('.store-tab').forEach((t, i) => {
-    const stores = ['kyobo', 'aladin', 'yes24'];
-    t.classList.toggle('active', stores[i] === store);
+  setStoreColor(store);
+  filterOn = false;
+  document.querySelectorAll('.store-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.store === store);
   });
   if (currentMainTab === 'latest') loadLatest();
   else renderHistoryList(historyData);
+}
+
+function isOurPublisher(publisher) {
+  return OUR_PUBLISHERS.some(p => publisher && publisher.includes(p));
 }
 
 function changeIcon(change) {
@@ -120,8 +150,6 @@ function changeIcon(change) {
 }
 
 function toOnTheHour(timeStr) {
-  // "2026-03-22 15:05" → "2026.03.22 15:00 기준"
-  // 예스24는 이미 "2026.03.24 18:00" 형식
   const clean = timeStr.replace(/-/g, '.');
   const parts = clean.split(' ');
   if (parts.length < 2) return clean + ' 기준';
@@ -135,12 +163,23 @@ function renderBooks(books, container) {
     return;
   }
   const time = books[0]['수집시각'] || '';
-  let html = `<div class="chart-header"><span>📅</span><span class="time-value">${toOnTheHour(time)}</span></div>`;
+  const hasOur = books.some(b => isOurPublisher(b['출판사'] || ''));
+
+  let html = `<div class="chart-header">
+    <span class="time-value">📅 ${toOnTheHour(time)}</span>
+    ${hasOur ? `<button class="filter-btn ${filterOn ? 'active' : ''}" id="filterBtn" onclick="toggleFilter()">우리 출판사만 보기</button>` : ''}
+  </div>`;
+
   books.forEach(book => {
     const rank = parseInt(book['순위']) || 0;
     const { icon, cls } = changeIcon(book['순위변동'] || '');
     const link = book['링크'] || '';
-    html += `<div class="book-item">
+    const publisher = book['출판사'] || '';
+    const isOurs = isOurPublisher(publisher);
+    const hiddenClass = filterOn && !isOurs ? 'hidden' : '';
+    const highlightClass = isOurs ? 'highlight' : '';
+
+    html += `<div class="book-item ${hiddenClass} ${highlightClass}" data-ours="${isOurs}">
       <div class="rank-col">
         <div class="rank-num ${rank<=3?'top3':''}">${rank}</div>
         <div class="change-badge ${cls}">${icon}</div>
@@ -148,12 +187,26 @@ function renderBooks(books, container) {
       <div class="divider"></div>
       <div class="book-info">
         <div class="book-title">${book['제목']||''}</div>
-        <div class="book-meta">${book['저자']||''} · ${book['출판사']||''}</div>
+        <div class="book-meta">
+          ${book['저자']||''} · ${publisher}
+          ${isOurs ? '<span class="our-badge">다산</span>' : ''}
+        </div>
       </div>
       ${link ? `<div class="book-link"><a href="${link}" target="_blank">상세 페이지</a></div>` : ''}
     </div>`;
   });
+
   container.innerHTML = html;
+}
+
+function toggleFilter() {
+  filterOn = !filterOn;
+  const btn = document.getElementById('filterBtn');
+  if (btn) btn.classList.toggle('active', filterOn);
+  document.querySelectorAll('.book-item[data-ours]').forEach(el => {
+    const isOurs = el.dataset.ours === 'true';
+    el.classList.toggle('hidden', filterOn && !isOurs);
+  });
 }
 
 function renderHistoryList(history) {
@@ -180,6 +233,7 @@ function renderHistoryList(history) {
 }
 
 function showHistoryDetail(index) {
+  filterOn = false;
   const entry = historyData[index];
   if (!entry) return;
   const books = entry['데이터']?.[currentStore] || [];
@@ -215,6 +269,7 @@ function parseCSV(text) {
 }
 
 async function loadLatest() {
+  filterOn = false;
   const container = document.getElementById('latest-view');
   container.innerHTML = '<div class="loading">불러오는 중...</div>';
   try {
@@ -236,6 +291,8 @@ async function loadHistory() {
   }
 }
 
+// 초기화
+setStoreColor('kyobo');
 loadLatest();
 loadHistory();
 </script>
