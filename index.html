@@ -42,7 +42,7 @@
     .rank-num { font-size: 20px; font-weight: 800; line-height: 1; }
     .rank-num.top3 { color: var(--store-color); }
     .change-badge { font-size: 11px; font-weight: 700; margin-top: 2px; }
-    .change-badge.up { color: var(--store-color); }
+    .change-badge.up { color: #e60012; }
     .change-badge.down { color: #4a90e2; }
     .change-badge.new { color: #ff7f00; }
     .change-badge.same { color: #bbb; }
@@ -62,8 +62,10 @@
     .history-list { display: flex; flex-direction: column; gap: 8px; }
     .history-item { background: #fff; border-radius: 10px; padding: 14px 18px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
     .history-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .history-item.has-ours { border-left: 3px solid var(--store-color); }
     .history-time { font-weight: 700; font-size: 14px; }
     .history-top { font-size: 12px; color: #999; margin-top: 2px; }
+    .history-our-badge { font-size: 10px; font-weight: 700; color: #fff; background: var(--store-color); border-radius: 4px; padding: 1px 5px; margin-top: 4px; display: inline-block; }
     .back-btn { background: none; border: none; color: #888; font-size: 14px; cursor: pointer; margin-bottom: 14px; padding: 0; font-family: inherit; display: flex; align-items: center; gap: 4px; }
     .back-btn:hover { color: #222; }
   </style>
@@ -98,7 +100,6 @@ const RAW = "https://raw.githubusercontent.com/jangmee/kyobo-bestseller/main/";
 const CSV_FILES = { kyobo: "kyobo_bestseller.csv", aladin: "aladin_bestseller.csv", yes24: "yes24_bestseller.csv" };
 const STORE_COLORS = { kyobo: "#6DB329", aladin: "#FB2888", yes24: "#0080FF" };
 
-// 관심 출판사 목록
 const OUR_PUBLISHERS = [
   "다산북스", "다산책방", "다산초당", "다산라이프", "다산사이언스",
   "다산에듀", "놀", "오브제", "다산3.0", "다산4.0", "유영",
@@ -113,8 +114,7 @@ let historyData = [];
 let filterOn = false;
 
 function setStoreColor(store) {
-  const color = STORE_COLORS[store];
-  document.documentElement.style.setProperty('--store-color', color);
+  document.documentElement.style.setProperty('--store-color', STORE_COLORS[store]);
 }
 
 function showMainTab(tab) {
@@ -163,11 +163,10 @@ function renderBooks(books, container) {
     return;
   }
   const time = books[0]['수집시각'] || '';
-  const hasOur = books.some(b => isOurPublisher(b['출판사'] || ''));
 
   let html = `<div class="chart-header">
     <span class="time-value">📅 ${toOnTheHour(time)}</span>
-    ${hasOur ? `<button class="filter-btn ${filterOn ? 'active' : ''}" id="filterBtn" onclick="toggleFilter()">우리 출판사만 보기</button>` : ''}
+    <button class="filter-btn ${filterOn ? 'active' : ''}" id="filterBtn" onclick="toggleFilter()">우리 출판사만 보기</button>
   </div>`;
 
   books.forEach(book => {
@@ -207,6 +206,22 @@ function toggleFilter() {
     const isOurs = el.dataset.ours === 'true';
     el.classList.toggle('hidden', filterOn && !isOurs);
   });
+  // 빈 상태 메시지 처리
+  const emptyMsg = document.getElementById('empty-msg');
+  if (filterOn) {
+    const visibleCount = document.querySelectorAll('.book-item:not(.hidden)').length;
+    if (visibleCount === 0) {
+      if (!emptyMsg) {
+        const msg = document.createElement('div');
+        msg.id = 'empty-msg';
+        msg.style.cssText = 'text-align:center;padding:60px 20px;color:#aaa;font-size:15px;';
+        msg.textContent = '이 차트에는 우리 출판사 책이 없어요 📭';
+        document.querySelector('.book-item') && document.querySelector('.book-item').parentNode.appendChild(msg);
+      }
+    }
+  } else {
+    if (emptyMsg) emptyMsg.remove();
+  }
 }
 
 function renderHistoryList(history) {
@@ -220,10 +235,14 @@ function renderHistoryList(history) {
     const data = entry['데이터']?.[currentStore] || [];
     const top1 = data[0]?.['제목'] || '데이터 없음';
     const time = toOnTheHour(entry['수집시각'] || '');
-    html += `<div class="history-item" onclick="showHistoryDetail(${history.length-1-i})">
+    const hasOurs = data.some(b => isOurPublisher(b['출판사'] || ''));
+    const ourCount = data.filter(b => isOurPublisher(b['출판사'] || '')).length;
+
+    html += `<div class="history-item ${hasOurs ? 'has-ours' : ''}" onclick="showHistoryDetail(${history.length-1-i})">
       <div>
         <div class="history-time">${time}</div>
         <div class="history-top">1위: ${top1}</div>
+        ${hasOurs ? `<span class="history-our-badge">다산 ${ourCount}권</span>` : ''}
       </div>
       <span style="color:#ccc;font-size:18px">›</span>
     </div>`;
@@ -291,7 +310,6 @@ async function loadHistory() {
   }
 }
 
-// 초기화
 setStoreColor('kyobo');
 loadLatest();
 loadHistory();
