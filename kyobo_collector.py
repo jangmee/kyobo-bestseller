@@ -236,12 +236,17 @@ def save_history(all_books, now):
                 history = [h for h in history if isinstance(h.get("데이터", {}), dict)]
             except Exception:
                 history = []
+    # 같은 정각 기준 데이터가 이미 있으면 저장 건너뛰기
+    current_hour = now[:13]  # "2026-03-28 09" 형태
+    for entry in history:
+        if entry.get("수집시각", "")[:13] == current_hour:
+            print(f"  이미 {current_hour}시 데이터가 있어요 — 중복 저장 건너뜀")
+            return
     history.append({"수집시각": now, "데이터": all_books})
     history = history[-30:]
     with open(path, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
     print(f"  history.json 저장 (총 {len(history)}회)")
-
 
 def collect_once(is_scheduled=True):
     now = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
