@@ -4,6 +4,11 @@ on:
     - cron: '23 * * * *'
     - cron: '51 * * * *'
   workflow_dispatch:
+    inputs:
+      source:
+        description: '호출 소스'
+        required: false
+        default: 'manual'
 jobs:
   collect:
     runs-on: ubuntu-latest
@@ -19,12 +24,13 @@ jobs:
           pip install playwright beautifulsoup4
           playwright install chromium
           playwright install-deps chromium
-      - name: 수집 실행 (자동)
-        if: github.event_name == 'schedule'
-        run: python kyobo_collector.py --event schedule
-      - name: 수집 실행 (수동)
-        if: github.event_name == 'workflow_dispatch'
-        run: python kyobo_collector.py --event workflow_dispatch
+      - name: 수집 실행
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.source }}" = "cron" ]; then
+            python kyobo_collector.py --event schedule
+          else
+            python kyobo_collector.py --event workflow_dispatch
+          fi
       - name: 결과 저장
         run: |
           git config user.name "github-actions"
