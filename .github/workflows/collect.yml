@@ -37,4 +37,8 @@ jobs:
           git config user.email "actions@github.com"
           git add kyobo_bestseller.csv aladin_bestseller.csv yes24_bestseller.csv history.json
           git diff --staged --quiet || git commit -m "자동 수집: $(TZ='Asia/Seoul' date '+%Y-%m-%d %H:%M') KST"
-          git push
+      - name: Push changes
+        run: |
+          git pull origin main --rebase
+          git push origin main
+          
