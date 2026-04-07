@@ -124,6 +124,8 @@ function showMainTab(tab) {
   });
   document.getElementById('latest-view').style.display = tab === 'latest' ? '' : 'none';
   document.getElementById('history-view').style.display = tab === 'history' ? '' : 'none';
+  if (tab === 'history' && historyData.length > 0) renderHistoryList(historyData); // 추가
+
 }
 
 function setStore(store) {
