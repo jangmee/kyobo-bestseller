@@ -60,7 +60,13 @@ def parse_kyobo(html, now):
                 parts = [p.strip() for p in text.split("·") if p.strip()]
                 author = parts[0] if parts else ""
                 publisher = parts[1] if len(parts) > 1 else ""
-            img_tag = item.find("img")
+            # 첫 번째 <img>는 체크박스 아이콘 — 표지 이미지를 별도 탐색
+            img_tag = None
+            for cand in item.find_all("img"):
+                if cand.get("alt", "") == "check" or "ico_checkbox" in cand.get("src", ""):
+                    continue
+                img_tag = cand
+                break
             img_url = ""
             if img_tag:
                 src = img_tag.get("src", "")
@@ -113,7 +119,8 @@ def parse_aladin_html(html, now, offset=0):
                     author = ", ".join(names[:-1])
                 break
         rank = str(offset + len(books) + 1)
-        img_tag = div.find("img")
+        # ss_book_list 내부에 img가 없음 — 앞쪽 DOM에서 가장 가까운 cover 이미지 탐색
+        img_tag = div.find_previous("img", src=lambda s: s and "cover" in s and "aladin" in s)
         img_url = ""
         if img_tag:
             src = img_tag.get("src", "")
