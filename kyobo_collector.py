@@ -312,13 +312,19 @@ def save_history(all_books, now):
                 history = [h for h in history if isinstance(h.get("데이터", {}), dict)]
             except Exception:
                 history = []
-    # 같은 정각 기준 데이터가 이미 있으면 저장 건너뛰기
+    # 같은 정각 기준 데이터가 이미 있으면 최신 수집분으로 교체
+    # (교체하지 않으면 최신 CSV와 history.json 마지막 엔트리가 달라져
+    #  '최신 차트'와 '지난 차트'의 순위가 어긋남)
     current_hour = now[:13]  # "2026-03-28 09" 형태
-    for entry in history:
+    replaced = False
+    for i, entry in enumerate(history):
         if entry.get("수집시각", "")[:13] == current_hour:
-            print(f"  이미 {current_hour}시 데이터가 있어요 — 중복 저장 건너뜀")
-            return
-    history.append({"수집시각": now, "데이터": all_books})
+            history[i] = {"수집시각": now, "데이터": all_books}
+            replaced = True
+            print(f"  {current_hour}시 데이터 교체 저장")
+            break
+    if not replaced:
+        history.append({"수집시각": now, "데이터": all_books})
     history = history[-30:]
     with open(path, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
