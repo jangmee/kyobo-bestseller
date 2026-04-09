@@ -86,10 +86,17 @@
     .gallery-card.highlight { border-color: var(--store-color); }
     .gallery-card.hidden { display: none; }
 
-    .card-img-wrap { aspect-ratio: 3 / 4; background: #e8e8e8; overflow: hidden; flex-shrink: 0; }
+    .card-img-wrap { position: relative; aspect-ratio: 3 / 4; background: #e8e8e8; overflow: hidden; flex-shrink: 0; }
     .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .card-img-wrap.skeleton { background: linear-gradient(90deg,#efefef 25%,#e0e0e0 50%,#efefef 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
-    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .card-img-wrap.skeleton { background: #f0f0f0; }
+    .card-img-wrap.skeleton::after {
+      content: '이미지\A준비 중';
+      white-space: pre;
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: #bbb; line-height: 1.8; text-align: center;
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    }
 
     .card-info { padding: 8px 9px 9px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
     .card-rank-row { display: flex; align-items: baseline; gap: 5px; }
