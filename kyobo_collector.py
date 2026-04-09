@@ -17,7 +17,7 @@ except ImportError:
 KST = timezone(timedelta(hours=9))
 HISTORY_FILE = "history.json"
 STORES = ["kyobo", "aladin", "yes24"]
-FIELDNAMES = ["수집시각", "순위", "제목", "저자", "출판사", "링크", "이전순위", "순위변동"]
+FIELDNAMES = ["수집시각", "순위", "제목", "저자", "출판사", "링크", "이미지URL", "이전순위", "순위변동"]
 
 
 def fetch_html(url):
@@ -60,9 +60,16 @@ def parse_kyobo(html, now):
                 parts = [p.strip() for p in text.split("·") if p.strip()]
                 author = parts[0] if parts else ""
                 publisher = parts[1] if len(parts) > 1 else ""
+            img_tag = item.find("img")
+            img_url = ""
+            if img_tag:
+                src = img_tag.get("src", "")
+                # 300x0 → 458x0 으로 고해상도 업그레이드, 버전 파라미터 제거
+                img_url = src.replace("fit-in/300x0", "fit-in/458x0").split("?")[0]
+                img_url = img_url.replace("http://", "https://")
             books.append({"수집시각": now, "순위": rank, "제목": title,
                           "저자": author, "출판사": publisher, "링크": link,
-                          "이전순위": "", "순위변동": ""})
+                          "이미지URL": img_url, "이전순위": "", "순위변동": ""})
     return books
 
 
@@ -106,9 +113,16 @@ def parse_aladin_html(html, now, offset=0):
                     author = ", ".join(names[:-1])
                 break
         rank = str(offset + len(books) + 1)
+        img_tag = div.find("img")
+        img_url = ""
+        if img_tag:
+            src = img_tag.get("src", "")
+            # cover150 → cover500 으로 고해상도 업그레이드
+            img_url = src.replace("cover150", "cover500")
+            img_url = img_url.replace("http://", "https://")
         books.append({"수집시각": now, "순위": rank, "제목": title,
                       "저자": author, "출판사": publisher, "링크": link,
-                      "이전순위": "", "순위변동": ""})
+                      "이미지URL": img_url, "이전순위": "", "순위변동": ""})
     return books
 
 
@@ -124,6 +138,57 @@ def scrape_aladin(now):
     for i, b in enumerate(books):
         b["순위"] = str(i+1)
     return books[:100]
+
+
+def clean_yes24_author(raw):
+    """예스24 저자 문자열 정제.
+
+    예스24 표기 규칙:
+      '/' = 역할 구분자 (저자/역자, 글작가/그림작가 등)
+      ',' = 같은 역할의 공동저자 구분자
+
+    따라서 '/' 첫 번째 세그먼트만 저자 영역으로 처리하고
+    이후 세그먼트(역자·편역자·그림작가 등)는 전부 무시한다.
+    """
+    # '저'/'역' 등 순수 역할 단어 단독 토큰은 이름으로 취급하지 않음
+    ROLE_ONLY = {'저', '역', '글', '편', '감', '그림', '사진', '기획', '감수'}
+
+    if not raw:
+        return ""
+    # UI 아티팩트 제거: "정보 더 보기" 이후 텍스트 전체 삭제
+    raw = re.sub(r'정보\s*더\s*보기.*', '', raw)
+    raw = re.sub(r'\s+', ' ', raw).strip()
+    if not raw:
+        return ""
+
+    # '/' 이후는 지원 역할(역자·편역자·그림작가 등) → 첫 세그먼트만 처리
+    first_segment = raw.split('/')[0].strip()
+
+    # 쉼표·가운뎃점으로 공동저자 분리
+    subparts = [sp.strip() for sp in re.split(r'[,·]', first_segment) if sp.strip()]
+
+    authors = []
+    for sp in subparts:
+        # 괄호 안 역할 표기 제거: (글), (그림), (역) 등
+        name = re.sub(r'\s*\([^)]*\)', '', sp).strip()
+        # 복합 역할 접미사 제거 (공백 없이 붙어있어도 제거)
+        name = re.sub(r'(편저|편역|번역|저자|역자|감수자|지은이|옮긴이|엮은이|저술|기획|편집|글그림)$', '', name).strip()
+        # 단일 역할 접미사 제거 — 앞에 공백 있을 때만 (이름 내 글자 보호)
+        name = re.sub(r'\s+(저|역|글|편|감|그림)$', '', name).strip()
+        # "외 N명" 패턴: 이미 복수가 명시된 경우 → 첫 저자 + "외" 로 즉시 반환
+        m = re.search(r'\s*외\s*\d*\s*명?', name)
+        if m:
+            name = name[:m.start()].strip()
+            if name and name not in ROLE_ONLY:
+                authors.append(name)
+            return (authors[0] + " 외") if authors else (name + " 외" if name else "")
+        # 순수 역할 단어 단독 토큰은 저자 목록에서 제외
+        if name and name not in ROLE_ONLY:
+            authors.append(name)
+
+    if not authors:
+        return raw
+    return authors[0] if len(authors) == 1 else authors[0] + " 외"
 
 
 def parse_yes24(html, now):
@@ -147,13 +212,17 @@ def parse_yes24(html, now):
         if link and not link.startswith("http"):
             link = "https://www.yes24.com" + link
         auth_span = item_div.find("span", class_="info_auth")
-        author = auth_span.get_text(strip=True) if auth_span else ""
-        author = re.sub(r"(저|역|지은이|옮긴이)", "", author).strip().strip("/")
+        # separator=' ': 자식 태그 간 공백 보존 (이름 내 띄어쓰기 유지)
+        raw_author = auth_span.get_text(separator=' ', strip=True) if auth_span else ""
+        author = clean_yes24_author(raw_author)
         pub_span = item_div.find("span", class_="info_pub")
         publisher = pub_span.get_text(strip=True) if pub_span else ""
+        # 이미지 URL: goods ID 로 직접 구성 (목록 페이지 XL 이미지)
+        goods_id = link.split("/")[-1] if link else ""
+        img_url = f"https://image.yes24.com/goods/{goods_id}/XL" if goods_id else ""
         books.append({"수집시각": now, "순위": rank, "제목": title,
                       "저자": author, "출판사": publisher, "링크": link,
-                      "이전순위": "", "순위변동": ""})
+                      "이미지URL": img_url, "이전순위": "", "순위변동": ""})
         if len(books) >= 100:
             break
     return books
