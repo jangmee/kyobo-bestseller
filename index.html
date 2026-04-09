@@ -244,15 +244,12 @@ function renderBooks(books, container) {
     </div>`;
 
     // 갤러리 뷰 카드
+    const imgContent = imgUrl
+      ? `<img src="${imgUrl}" referrerpolicy="no-referrer" loading="lazy" onerror="this.parentElement.classList.add('skeleton');this.style.display='none';" alt="${(book['제목']||'').replace(/"/g,'')}">`
+      : '';  // 이미지 URL 없으면 img 태그 없이 skeleton만 표시
     galleryHtml += `<div class="gallery-card ${hiddenClass} ${isOurs ? 'highlight' : ''}" data-ours="${isOurs}">
-      <div class="card-img-wrap">
-        <img
-          src="${imgUrl || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22/>'}"
-          referrerpolicy="no-referrer"
-          loading="lazy"
-          onerror="this.parentElement.classList.add('skeleton');this.style.display='none';"
-          alt="${(book['제목']||'').replace(/"/g,'')}"
-        >
+      <div class="card-img-wrap ${imgUrl ? '' : 'skeleton'}">
+        ${imgContent}
       </div>
       <div class="card-info">
         <div class="card-rank-row">
