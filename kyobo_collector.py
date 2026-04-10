@@ -262,7 +262,7 @@ def scrape_all(now):
     return results
 
 
-def load_last_snapshot(store):
+def load_last_snapshot(store, current_hour=None):
     path = Path(HISTORY_FILE)
     if not path.exists():
         return {}
@@ -270,7 +270,16 @@ def load_last_snapshot(store):
         history = json.load(f)
     if not history:
         return {}
-    last_entry = history[-1]
+    # 같은 시간대(정각 기준) 엔트리는 건너뛰고 이전 시간대 마지막 데이터를 기준으로 삼음.
+    # (:23 수집 후 :51 수집 시, :23 엔트리를 비교 기준으로 쓰면 변동이 거의 없어
+    #  순위변동이 모두 '-'로 표시되는 문제 방지)
+    for entry in reversed(history):
+        if current_hour and entry.get("수집시각", "")[:13] == current_hour:
+            continue
+        last_entry = entry
+        break
+    else:
+        return {}
     data = last_entry.get("데이터", {})
     if not isinstance(data, dict):
         return {}
@@ -334,11 +343,12 @@ def collect_once(is_scheduled=True):
     now = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     print(f"\n{now} 수집 시작\n")
     all_books = scrape_all(now)
+    current_hour = now[:13]  # "2026-04-09 09" 형태
     for store in STORES:
         books = all_books.get(store, [])
         if not books:
             continue
-        last = load_last_snapshot(store)
+        last = load_last_snapshot(store, current_hour)
         for book in books:
             prev = last.get(book["제목"], "")
             book["이전순위"] = prev
