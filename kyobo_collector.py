@@ -28,7 +28,7 @@ def fetch_html(url):
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         ))
         page = context.new_page()
-        page.goto(url, timeout=30000)
+        page.goto(url, timeout=60000)
         page.wait_for_timeout(4000)
         html = page.content()
         browser.close()
@@ -101,6 +101,8 @@ def scrape_kyobo(now):
 def parse_aladin_html(html, now, offset=0):
     soup = BeautifulSoup(html, "html.parser")
     books = []
+
+    # 기존 구조: div.ss_book_list + a.bo3
     for div in soup.find_all("div", class_="ss_book_list"):
         title_a = div.find("a", class_="bo3")
         if not title_a:
@@ -110,26 +112,56 @@ def parse_aladin_html(html, now, offset=0):
         li_items = div.find_all("li")
         author = publisher = ""
         for li in li_items:
-            text = li.get_text(strip=True)
-            if "지은이" in text or "옮긴이" in text or "저" in text:
-                a_tags = li.find_all("a")
-                names = [a.get_text(strip=True) for a in a_tags if a.get_text(strip=True)]
-                if names:
-                    publisher = names[-1]
-                    author = ", ".join(names[:-1])
+            pub_links = [a for a in li.find_all("a") if "PublisherSearch" in a.get("href", "")]
+            auth_links = [a for a in li.find_all("a") if "AuthorSearch" in a.get("href", "")]
+            if pub_links:
+                publisher = pub_links[0].get_text(strip=True)
+                author = ", ".join(a.get_text(strip=True) for a in auth_links)
                 break
         rank = str(offset + len(books) + 1)
-        # ss_book_list 내부에 img가 없음 — 앞쪽 DOM에서 가장 가까운 cover 이미지 탐색
         img_tag = div.find_previous("img", src=lambda s: s and "cover" in s and "aladin" in s)
         img_url = ""
         if img_tag:
             src = img_tag.get("src", "")
-            # cover150 → cover500 으로 고해상도 업그레이드
             img_url = src.replace("cover150", "cover500")
             img_url = img_url.replace("http://", "https://")
         books.append({"수집시각": now, "순위": rank, "제목": title,
                       "저자": author, "출판사": publisher, "링크": link,
                       "이미지URL": img_url, "이전순위": "", "순위변동": ""})
+
+    if books:
+        return books
+
+    # 신규 구조 폴백: 클래스 없는 <li> 기반 레이아웃
+    for li in soup.find_all("li"):
+        product_links = [a for a in li.find_all("a") if "wproduct.aspx" in a.get("href", "")]
+        if not product_links:
+            continue
+        title = ""
+        link = ""
+        for a in product_links:
+            if a.find("img"):
+                continue
+            title = a.get_text(strip=True)
+            link = a.get("href", "")
+            break
+        if not title:
+            continue
+        pub_links = [a for a in li.find_all("a") if "PublisherSearch" in a.get("href", "")]
+        auth_links = [a for a in li.find_all("a") if "AuthorSearch" in a.get("href", "")]
+        publisher = pub_links[0].get_text(strip=True) if pub_links else ""
+        author = ", ".join(a.get_text(strip=True) for a in auth_links)
+        rank = str(offset + len(books) + 1)
+        img_tag = li.find("img", src=lambda s: s and "cover" in s)
+        img_url = ""
+        if img_tag:
+            src = img_tag.get("src", "")
+            img_url = src.replace("cover150", "cover500")
+            img_url = img_url.replace("http://", "https://")
+        books.append({"수집시각": now, "순위": rank, "제목": title,
+                      "저자": author, "출판사": publisher, "링크": link,
+                      "이미지URL": img_url, "이전순위": "", "순위변동": ""})
+
     return books
 
 
@@ -273,18 +305,18 @@ def load_last_snapshot(store, current_hour=None):
     # 같은 시간대(정각 기준) 엔트리는 건너뛰고 이전 시간대 마지막 데이터를 기준으로 삼음.
     # (:23 수집 후 :51 수집 시, :23 엔트리를 비교 기준으로 쓰면 변동이 거의 없어
     #  순위변동이 모두 '-'로 표시되는 문제 방지)
+    # 해당 서점 데이터가 비어있는 엔트리도 건너뛰어 유효한 비교 기준을 찾음.
     for entry in reversed(history):
         if current_hour and entry.get("수집시각", "")[:13] == current_hour:
             continue
-        last_entry = entry
-        break
-    else:
-        return {}
-    data = last_entry.get("데이터", {})
-    if not isinstance(data, dict):
-        return {}
-    store_data = data.get(store, [])
-    return {row["제목"]: row["순위"] for row in store_data if isinstance(row, dict)}
+        data = entry.get("데이터", {})
+        if not isinstance(data, dict):
+            continue
+        store_data = data.get(store, [])
+        if not store_data:
+            continue
+        return {row["제목"]: row["순위"] for row in store_data if isinstance(row, dict)}
+    return {}
 
 
 def calc_change(current, previous):
